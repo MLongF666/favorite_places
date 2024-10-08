@@ -1,9 +1,13 @@
+import 'package:amap_map/amap_map.dart';
 import 'package:favorite_places/screens/add_place.dart';
+import 'package:favorite_places/screens/map.dart';
 import 'package:favorite_places/screens/places.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+
+import 'constents/constants.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   brightness: Brightness.dark,
@@ -38,6 +42,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AMapInitializer.init(context, apiKey: ConstConfig.amapApiKeys);
     return MaterialApp(
       title: 'Great Places',
       theme: theme,
@@ -45,6 +50,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => PlacesListScreen(),
         'add_place': (context) => AddPlaceScreen(),
+        'map': (context) => MapScreen(),
       },
     );
   }

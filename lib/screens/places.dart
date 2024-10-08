@@ -6,11 +6,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'add_place.dart';
 
-class PlacesListScreen extends ConsumerWidget {
+class PlacesListScreen extends ConsumerStatefulWidget {
   const PlacesListScreen({super.key});
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConsumerStatefulWidget> createState() {
+    return _PlacesListScreenState();
+  }
+}
+
+class _PlacesListScreenState extends ConsumerState<PlacesListScreen> {
+  late Future<void> _placesFuture;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _placesFuture= ref.read(userPlacesProvider.notifier).loadPlaces();
+  }
+  @override
+  Widget build(BuildContext context) {
     final userPlaces= ref.watch(userPlacesProvider);
     return  Scaffold(
       appBar: AppBar(
@@ -26,8 +39,9 @@ class PlacesListScreen extends ConsumerWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: PlacesList(
-          places: userPlaces,
+        child: FutureBuilder(future:_placesFuture ,builder: (context,snapshot)=>
+        snapshot.connectionState==ConnectionState.waiting?const Center(child: CircularProgressIndicator()):
+        PlacesList(places: userPlaces),
         ),
       ),
     );

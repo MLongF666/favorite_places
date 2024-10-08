@@ -1,10 +1,11 @@
 
+import 'package:favorite_places/screens/map.dart';
 import 'package:flutter/material.dart';
-import 'package:location/location.dart';
-
+import 'package:geolocator/geolocator.dart';
 import '../constents/constants.dart';
 import '../models/placelocation.dart';
 import '../services/location.dart';
+import 'package:x_amap_base/x_amap_base.dart';
 
 class LocationInput extends StatefulWidget {
   const LocationInput({super.key, required this.onLocationSelected});
@@ -13,38 +14,51 @@ class LocationInput extends StatefulWidget {
   @override
   State<LocationInput> createState() => _LocationInputState();
 }
-
 class _LocationInputState extends State<LocationInput> {
   var _isGettingLocation = false;
   void _getCurrentLocation() async {
-    Location location = Location();
-    bool _serviceEnabled;
-    PermissionStatus _permissionGranted;
-    LocationData _locationData;
-    _serviceEnabled = await location.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await location.requestService();
-      if (!_serviceEnabled) {
+    LocationPermission permission=await Geolocator.checkPermission();
+    bool isEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!isEnabled){
+      await Geolocator.openLocationSettings();
+    }else{
+      if(permission==LocationPermission.denied){
+        print("Permission denied");
+        permission=await Geolocator.requestPermission();
+        if(permission==LocationPermission.whileInUse || permission==LocationPermission.always){
+          await getPosition();
+        }
         return;
+      }else if(permission==LocationPermission.deniedForever){
+        print("Permission denied forever");
+        permission=await Geolocator.requestPermission();
+        if(permission==LocationPermission.whileInUse || permission==LocationPermission.always){
+          await getPosition();
+        }
+      }else if(permission==LocationPermission.whileInUse || permission==LocationPermission.always){
+        await getPosition();
       }
     }
-    _permissionGranted = await location.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await location.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
-        return;
-      }
+  }
+
+  Future<void> getPosition() async {
+    Position? location;
+    try{
+      setState(() {
+        _isGettingLocation = true;
+      });
+      //forceAndroidLocationManager 真机需要设置为true
+      location = await Geolocator.getCurrentPosition(forceAndroidLocationManager: true);
+      setState(() {
+        _isGettingLocation = false;
+      });
+      upLocationData(location.latitude,location.longitude);
+      print("Permission granted");
+      print("latitude:${location.latitude}");
+      print("longitude:${location.longitude}");
+    }catch(e){
+      print(e);
     }
-    setState(() {
-      _isGettingLocation = true;
-    });
-    _locationData = await location.getLocation();
-    setState(() {
-      _isGettingLocation = false;
-    });
-    print(_locationData.latitude);
-    print(_locationData.longitude);
-    upLocationData(_locationData);
   }
 
   Widget content = const Text(
@@ -70,7 +84,9 @@ class _LocationInputState extends State<LocationInput> {
               icon: const Icon(Icons.location_on),
             ),
             TextButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                _selectOnMap();
+              },
               label: const Text('Select on Map'),
               icon: const Icon(Icons.map),
             )
@@ -80,16 +96,11 @@ class _LocationInputState extends State<LocationInput> {
     );
   }
 
-  void upLocationData(LocationData locationData) {
-    final location = locationData.latitude;
-    final longitude = locationData.longitude;
-    PlaceLocation placeLocation = PlaceLocation(
-      latitude: location!,
-      longitude: longitude!,
-      address: '',
-    );
+  void upLocationData(double lat, double lng) {
+    PlaceLocation? placeLocation;
     LocationModel locationModel = LocationModel(
-       location: placeLocation,
+       latitude: lat,
+       longitude: lng,
     );
     Future.wait([
     locationModel.getPositionImageData().then((value) {
@@ -105,14 +116,34 @@ class _LocationInputState extends State<LocationInput> {
             constraints: const BoxConstraints.expand(),
             child: Image.memory(results[0],fit: BoxFit.cover,width: double.infinity,height: double.infinity,));
       });
-      List<dynamic> address=results[1]['regeocode']['formatted_address'];
-      if(address.isEmpty){
-        address.add('Unknown');
+      var address=results[1]['regeocode']['formatted_address'];
+      if(address is String){
+        if(address.isEmpty){
+          address='Unknown';
+        }
+        placeLocation=PlaceLocation(latitude: lat, longitude: lng, address: address);
+        widget.onLocationSelected(placeLocation!);
+
+      }else if(address is List){
+        if(address.isEmpty){
+          address.add('unknown');
+          placeLocation=PlaceLocation(latitude: lat, longitude: lng, address: address[0]);
+        }
+        widget.onLocationSelected(placeLocation!);
       }
-      placeLocation.address=address[0];
-      widget.onLocationSelected(placeLocation);
     }).catchError((e){
       print(e);
     });
+  }
+
+  void _selectOnMap() async {
+    final pickedLocation = await Navigator.of(context).push<LatLng>(MaterialPageRoute(builder: (ctx) => MapScreen(isSelected: true)));
+    if (pickedLocation == null) {
+      return;
+    }else{
+      print("pickedLocation:$pickedLocation");
+      upLocationData(pickedLocation.latitude, pickedLocation.longitude);
+
+    }
   }
 }

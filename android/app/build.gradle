@@ -25,12 +25,12 @@ if (flutterVersionName == null) {
 
 android {
     namespace = "com.example.favorite_places"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk 34
+    ndkVersion = '21.0.6113669'
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -45,12 +45,35 @@ android {
     }
 
     buildTypes {
-        release {
+        debug {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.debug
+            minifyEnabled false //删除无用代码
+            shrinkResources false //删除无用资源
+            //关闭混淆
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+        release {
+            minifyEnabled false //删除无用代码
+            shrinkResources false //删除无用资源
+            //关闭混淆
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
         }
     }
+//    sourceSets {
+//        main {
+//            jni {
+//                srcDirs 'src\\main\\jni'
+//            }
+//        }
+//    }
 }
 
 flutter {

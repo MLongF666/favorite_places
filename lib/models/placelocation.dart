@@ -1,16 +1,10 @@
 class PlaceLocation{
   final double latitude;
   final double longitude;
-  String address;
-
-  PlaceLocation({
+  final String address;
+  const PlaceLocation ({
     required this.latitude,
     required this.longitude,
     required this.address
   });
-
-  @override
-  String toString() {
-    return address;
-  }
 }
